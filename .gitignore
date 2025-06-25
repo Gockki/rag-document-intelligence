@@ -17,3 +17,10 @@ build/
 
 # Logs
 *.log
+# Frontend env
+frontend/.env
+frontend/.env.local
+
+# Backend env
+backend/.env
+backend/.env.local
