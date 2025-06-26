@@ -41,7 +41,7 @@ yarn-error.log*
 # ChromaDB
 chromadb/
 chroma.sqlite3
-backend/chromadb_data/
+backend/chroma_db
 
 # IDE
 .vscode/
