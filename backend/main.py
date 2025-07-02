@@ -369,40 +369,151 @@ Vastaa aina suomeksi ja ole tarkka."""
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
 @app.get("/documents")
-async def list_documents(user_email: str = "demo@example.com", limit: int = 50):
-    """List user's documents with enhanced info"""
+async def list_all_user_documents(user_email: str = "demo@example.com"):
+    """Listaa käyttäjän kaikki dokumentit (turvallinen versio)"""
     try:
-        print(f"🔍 DEBUG: Starting list_documents for {user_email}")
+        print(f"📄 Fetching documents for: {user_email}")
         user_id = postgres_manager.get_or_create_user(user_email)
-        print(f"🔍 DEBUG: user_id = {user_id}")
+        print(f"👤 User ID: {user_id}")
         
-        documents = postgres_manager.get_user_documents(user_id, limit)
-        print(f"🔍 DEBUG: documents count = {len(documents)}")
-        print(f"🔍 DEBUG: first doc = {documents[0] if documents else 'None'}")
-        if documents:
-            print(f"🔍 DEBUG: first doc length = {len(documents[0])}")
-            print(f"🔍 DEBUG: first doc fields = {[type(field) for field in documents[0]]}")
+        documents = postgres_manager.get_user_documents(user_id)
+        print(f"📚 Found {len(documents)} documents")
+        
+        # Muunna lista dict-muotoon jos tarpeen
+        doc_list = []
+        for doc in documents:
+            if isinstance(doc, dict):
+                doc_list.append(doc)
+            else:
+                # Jos RealDictRow, muunna dict:iksi
+                doc_list.append(dict(doc))
+        
+        # Lisää tieto siitä, onko dokumentilla embeddings ChromaDB:ssä
+        for doc in doc_list:
+            try:
+                # Tarkista ChromaDB turvallisesti
+                doc["has_embeddings"] = False  # Oletusarvo
+                
+                if collection:  # Varmista että collection on olemassa
+                    chroma_results = collection.get(
+                        where={"doc_id": doc["id"]},
+                        limit=1
+                    )
+                    
+                    # Tarkista että tulokset ovat valideja
+                    if chroma_results and isinstance(chroma_results, dict):
+                        ids = chroma_results.get("ids", [])
+                        if ids and isinstance(ids, list):
+                            doc["has_embeddings"] = len(ids) > 0
+                            
+            except Exception as e:
+                print(f"⚠️ ChromaDB check failed for doc {doc.get('id', '?')}: {e}")
+                # Jos ChromaDB haku epäonnistuu, jatka silti
+                pass
         
         return {
-            "documents": [
-                DocumentInfo(
-                    id=doc['id'],                    # Muutettu doc[0] → doc['id']
-                    filename=doc['filename'],        # Muutettu doc[1] → doc['filename']
-                    original_filename=doc['original_filename'],  # doc[2] → doc['original_filename']
-                    chunk_count=doc['chunk_count'],  # doc[3] → doc['chunk_count']
-                    upload_time=doc['upload_time'].isoformat(),  # doc[4] → doc['upload_time']
-                    file_size=doc['file_size'],      # doc[5] → doc['file_size']
-                    file_type=doc['file_type'] or "unknown",     # doc[6] → doc['file_type']
-                    has_numerical_data=doc['has_numerical_data'] or False  # doc[7] → doc['has_numerical_data']
-                )
-                for doc in documents
-            ],
-            "total": len(documents),
-            "supported_formats": ["TXT", "MD", "PDF", "XLSX", "XLS"]
+            "documents": doc_list,
+            "total": len(doc_list),
+            "user_email": user_email
         }
+        
     except Exception as e:
-        print(f"❌ Documents error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
+        print(f"❌ Error listing documents: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+        
+    except Exception as e:
+        print(f"Error listing documents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/documents/{doc_id}")
+async def delete_document(
+    doc_id: int,
+    user_email: str = "demo@example.com"
+):
+    """Poista dokumentti (vain omistaja voi poistaa)"""
+    try:
+        # Tarkista käyttäjän oikeudet
+        user_id = postgres_manager.get_or_create_user(user_email)
+        doc_owner_id = postgres_manager.get_document_owner(doc_id)
+        
+        if not doc_owner_id:
+            raise HTTPException(status_code=404, detail="Document not found")
+            
+        if doc_owner_id != user_id:
+            raise HTTPException(
+                status_code=403, 
+                detail="You don't have permission to delete this document"
+            )
+        
+        # Hae dokumentin tiedot ennen poistoa (lokitusta varten)
+        doc_info = postgres_manager.get_document_info(doc_id)
+        
+        # Poista ChromaDB:stä
+        print(f"🗑️ Deleting document {doc_id} from ChromaDB...")
+        try:
+            # Poista kaikki dokumentin chunkit ChromaDB:stä
+            collection.delete(where={"doc_id": doc_id})
+            print(f"✅ Deleted embeddings for document {doc_id}")
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to delete from ChromaDB: {e}")
+            # Jatka silti PostgreSQL poistoon
+        
+        # Poista PostgreSQL:stä
+        print(f"🗑️ Deleting document {doc_id} from PostgreSQL...")
+        success = postgres_manager.delete_document(doc_id)
+        
+        if success:
+            return {
+                "message": f"Document '{doc_info['original_filename']}' deleted successfully",
+                "doc_id": doc_id,
+                "filename": doc_info['original_filename']
+            }
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to delete document from database"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting document: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/documents/{doc_id}/info")
+async def get_document_info(
+    doc_id: int,
+    user_email: str = "demo@example.com"
+):
+    """Hae yksittäisen dokumentin tiedot"""
+    try:
+        # Tarkista käyttäjän oikeudet
+        user_id = postgres_manager.get_or_create_user(user_email)
+        doc_info = postgres_manager.get_document_info(doc_id)
+        
+        if not doc_info:
+            raise HTTPException(status_code=404, detail="Document not found")
+            
+        if doc_info['user_id'] != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="You don't have permission to view this document"
+            )
+        
+        # Hae chunk-määrä ChromaDB:stä
+        chroma_results = collection.get(where={"doc_id": doc_id})
+        doc_info["embeddings_count"] = len(chroma_results["ids"])
+        
+        return doc_info
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting document info: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/chat/sessions")
 async def get_chat_sessions(user_email: str = "demo@example.com", limit: int = 20):

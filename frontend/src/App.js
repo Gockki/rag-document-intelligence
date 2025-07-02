@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
+import DocumentManager from './components/DocumentManager';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -440,22 +441,23 @@ const DocumentIntelligence = () => {
 
           {/* Uploaded Files */}
           {uploadedFiles.length > 0 && (
-            <div className="card">
-              <h3 className="card-header">✅ Documents ({uploadedFiles.length})</h3>
-              <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                {uploadedFiles.map((file, index) => (
-                  <div key={index} className="file-item">
-                    <div className="file-name">{file.filename}</div>
-                    <div className="file-meta">
-                      {file.chunk_count} chunks • {new Date(file.upload_time).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
+            <DocumentManager 
+              documents={uploadedFiles}
+              userEmail={userEmail}
+              onDocumentDeleted={(docId, filename) => {
+                // Näytä viesti chatissa
+                addSystemMessage(`🗑️ Document "${filename}" has been deleted successfully.`);
+      
+                // Jos poistettu dokumentti oli ainoa, tyhjennä lista
+                if (uploadedFiles.length === 1) {
+                  setUploadedFiles([]);
+                }
+              }}
+              onRefresh={loadDocuments}
+          />
+        )}
+      </div>
+      
         {/* Main Chat Area */}
         <div className="chat-container">
           

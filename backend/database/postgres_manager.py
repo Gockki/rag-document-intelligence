@@ -7,7 +7,7 @@ from datetime import datetime
 import json
 
 class PostgresManager:
-    """Hallinnoi PostgreSQL-operaatioita RAG-järjestelmässä"""
+    """Hallinnoi PostgreSQL-operaatioita"""
     
     def __init__(self):
         self.config = DatabaseConfig.from_env()
@@ -83,7 +83,7 @@ class PostgresManager:
             with conn.cursor() as cursor:
                 cursor.execute("""
                     SELECT id, filename, original_filename, file_size, 
-                           upload_time, chunk_count, processed
+                        upload_time, chunk_count, processed
                     FROM documents 
                     WHERE user_id = %s 
                     ORDER BY upload_time DESC
@@ -91,8 +91,82 @@ class PostgresManager:
                 
                 return cursor.fetchall()
     
-    def get_user_documents(self, user_id: int, limit: int = 50) -> List[tuple]:
-        """Hae käyttäjän dokumentit (uusi main.py:lle)"""
+    # Lisää nämä funktiot postgres_manager.py tiedostoon DOCUMENT OPERATIONS -osion alle
+
+    def delete_document(self, doc_id: int) -> bool:
+        """Poista dokumentti ja kaikki siihen liittyvä data"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    # Poista ensin chat-viestien viittaukset dokumenttiin
+                    # (jos source_documents sisältää doc_id:n)
+                    cursor.execute("""
+                        UPDATE chat_messages 
+                        SET source_documents = NULL
+                        WHERE source_documents::jsonb @> %s
+                    """, (json.dumps([doc_id]),))
+                    
+                    # Poista dokumentin palaset
+                    cursor.execute("DELETE FROM document_chunks WHERE document_id = %s", (doc_id,))
+                    
+                    # Poista itse dokumentti
+                    cursor.execute("DELETE FROM documents WHERE id = %s", (doc_id,))
+                    
+                    conn.commit()
+                    
+                    print(f"✅ Document {doc_id} deleted from PostgreSQL")
+                    return True
+                    
+        except Exception as e:
+            print(f"❌ Error deleting document {doc_id}: {e}")
+            return False
+
+    def get_document_owner(self, doc_id: int) -> Optional[int]:
+        """Hae dokumentin omistaja turvallisuustarkistusta varten"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT user_id FROM documents WHERE id = %s", (doc_id,))
+                    result = cursor.fetchone()
+                    
+                    return result['user_id'] if result else None
+                    
+        except Exception as e:
+            print(f"Error getting document owner: {e}")
+            return None
+
+    def get_document_info(self, doc_id: int) -> Optional[Dict[str, Any]]:
+        """Hae yksittäisen dokumentin tiedot"""
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT 
+                            d.id,
+                            d.filename,
+                            d.original_filename,
+                            d.file_size,
+                            d.file_type,
+                            d.chunk_count,
+                            d.processed,
+                            d.upload_time,
+                            d.user_id,
+                            u.email as user_email,
+                            u.name as user_name
+                        FROM documents d
+                        JOIN users u ON d.user_id = u.id
+                        WHERE d.id = %s
+                    """, (doc_id,))
+                    
+                    return cursor.fetchone()
+                    
+        except Exception as e:
+            print(f"Error getting document info: {e}")
+            return None
+
+    # Päivitä get_user_documents funktiota palauttamaan dict eikä tuple
+    def get_user_documents(self, user_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
@@ -103,15 +177,17 @@ class PostgresManager:
                         chunk_count, 
                         upload_time, 
                         file_size,
-                        COALESCE(file_type, 'unknown') as file_type,
-                        false as has_numerical_data
+                        COALESCE(file_type, 'text/plain') as file_type,
+                        processed
                     FROM documents 
                     WHERE user_id = %s 
                     ORDER BY upload_time DESC 
                     LIMIT %s
                 """, (user_id, limit))
+                            
+                documents = cursor.fetchall()
                 
-                return cursor.fetchall()
+                return documents if documents else []
     
     # CHAT OPERATIONS
     def create_chat_session(self, user_id: int, session_name: str = None) -> int:
@@ -130,7 +206,7 @@ class PostgresManager:
                 return cursor.fetchone()['id']
     
     def save_chat_message(self, session_id: int, message_type: str, content: str,
-                         confidence_score: float = None, source_documents: List[int] = None):
+                        confidence_score: float = None, source_documents: List[int] = None):
         """Tallenna chat-viesti (vanha metodi)"""
         with self.get_connection() as conn:
             with conn.cursor() as cursor:
