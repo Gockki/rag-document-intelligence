@@ -3,6 +3,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import DocumentManager from './components/DocumentManager';
+import { ThemeProvider } from './contexts/ThemeContext';
+import  DarkModeToggle from './components/DarkModeToggle';
+
 
 // Loading component
 const LoadingSpinner = () => (
@@ -629,7 +632,10 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+        <DarkModeToggle />
+      </ThemeProvider>
       <style jsx global>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
