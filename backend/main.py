@@ -105,7 +105,7 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[st
             if table_end != -1 and table_end - start < chunk_size * 1.5:
                 end = table_end
         
-        # Try to break at sentence boundary
+        
         elif end < len(text):
             for i in range(end, max(start + chunk_size - 200, start), -1):
                 if text[i] in '.!?\n':

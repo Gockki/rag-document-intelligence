@@ -1,9 +1,25 @@
 // src/components/DarkModeToggle.js
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { Sun, Moon } from 'lucide-react';
 
 const DarkModeToggle = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
+
+  const colors = {
+    light: {
+      bg: '#ffffff',
+      border: '#ced4da',
+      icon: '#f59e0b'
+    },
+    dark: {
+      bg: '#2d2d30',
+      border: '#464647',
+      icon: '#fbbf24'
+    }
+  };
+
+  const currentColors = isDarkMode ? colors.dark : colors.light;
 
   return (
     <button
@@ -13,23 +29,35 @@ const DarkModeToggle = () => {
         position: 'fixed',
         bottom: '2rem',
         right: '2rem',
-        width: '50px',
-        height: '50px',
-        borderRadius: '50%',
-        backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-        border: '2px solid ' + (isDarkMode ? '#4b5563' : '#e5e7eb'),
+        width: '48px',
+        height: '48px',
+        borderRadius: '4px',
+        backgroundColor: currentColors.bg,
+        border: `1px solid ${currentColors.border}`,
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '1.5rem',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
+        transition: 'all 0.2s ease',
         zIndex: 100
       }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.12)';
+      }}
       title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {isDarkMode ? '☀️' : '🌙'}
+      {isDarkMode ? (
+        <Sun size={20} color={currentColors.icon} />
+      ) : (
+        <Moon size={20} color={currentColors.icon} />
+      )}
     </button>
   );
 };

@@ -1,4 +1,4 @@
-// contexts/ThemeContext.js
+// src/contexts/ThemeContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
@@ -13,20 +13,13 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Tarkista tallennettu teema
     const saved = localStorage.getItem('darkMode');
-    if (saved !== null) {
-      return JSON.parse(saved);
-    }
-    // Tai käytä järjestelmän teemaa
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return saved ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {
-    // Tallenna valinta
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
     
-    // Päivitä body-luokka
     if (isDarkMode) {
       document.body.classList.add('dark-mode');
     } else {
@@ -35,91 +28,234 @@ export const ThemeProvider = ({ children }) => {
   }, [isDarkMode]);
 
   const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode(!isDarkMode);
   };
 
-  // Dark Mode CSS
+  // Professional dark mode styles
   const darkModeStyles = `
     /* Dark Mode Variables */
-    :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f9fafb;
-      --bg-tertiary: #f3f4f6;
-      --text-primary: #111827;
-      --text-secondary: #4b5563;
-      --text-tertiary: #6b7280;
-      --border-color: #e5e7eb;
-      --shadow-color: rgba(0, 0, 0, 0.1);
-      --accent-blue: #3b82f6;
-      --accent-blue-dark: #2563eb;
-      --success-color: #10b981;
-      --error-color: #ef4444;
-      --code-bg: #f3f4f6;
+    body.dark-mode {
+      --primary-dark: #0f0f0f;
+      --primary: #1a1a1a;
+      --accent: #5a9fd4;
+      --bg-primary: #2d2d30;
+      --bg-secondary: #252526;
+      --bg-tertiary: #1e1e1e;
+      --text-primary: #d4d4d4;
+      --text-secondary: #cccccc;
+      --text-muted: #858585;
+      --border-light: #3e3e42;
+      --border-medium: #464647;
+      --success: #4ec9b0;
+      --warning: #dcdcaa;
+      --danger: #f48771;
+      --info: #3794ff;
     }
 
+    /* Dark Mode Base Styles */
     body.dark-mode {
-      --bg-primary: #111827;
-      --bg-secondary: #1f2937;
-      --bg-tertiary: #374151;
-      --text-primary: #f9fafb;
-      --text-secondary: #d1d5db;
-      --text-tertiary: #9ca3af;
-      --border-color: #374151;
-      --shadow-color: rgba(0, 0, 0, 0.3);
-      --accent-blue: #60a5fa;
-      --accent-blue-dark: #3b82f6;
-      --success-color: #34d399;
-      --error-color: #f87171;
-      --code-bg: #1f2937;
-    }
-
-    /* Apply dark mode to all elements */
-    body.dark-mode {
-      background-color: var(--bg-primary);
+      background-color: var(--bg-tertiary);
       color: var(--text-primary);
     }
 
-    body.dark-mode .min-h-screen {
-      background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
+    /* Header in dark mode */
+    body.dark-mode header {
+      background-color: var(--primary-dark) !important;
+      border-bottom: 1px solid var(--border-light);
     }
 
-    body.dark-mode .header {
-      background-color: var(--bg-secondary) !important;
-      border-bottom-color: var(--border-color) !important;
-    }
-
-    body.dark-mode .card {
-      background-color: var(--bg-secondary) !important;
-      border-color: var(--border-color) !important;
+    /* Cards in dark mode */
+    body.dark-mode .card,
+    body.dark-mode > div > div > div > div[style*="background: white"] {
+      background-color: var(--bg-primary) !important;
+      border-color: var(--border-light) !important;
       color: var(--text-primary) !important;
     }
 
-    body.dark-mode .message {
+    /* Main chat area */
+    body.dark-mode > div > div > div > div[style*="background: white"][style*="flexDirection: column"] {
+      background-color: var(--bg-primary) !important;
+      border-color: var(--border-light) !important;
+    }
+
+    /* Chat header */
+    body.dark-mode div[style*="borderBottom"][style*="padding: 1rem"] {
       background-color: var(--bg-secondary) !important;
-      border-color: var(--border-color) !important;
+      border-color: var(--border-light) !important;
+    }
+
+    /* Input area background */
+    body.dark-mode div[style*="borderTop"][style*="padding: 1rem"] {
+      background-color: var(--bg-secondary) !important;
+      border-color: var(--border-light) !important;
+    }
+
+    /* All text elements */
+    body.dark-mode h1,
+    body.dark-mode h2,
+    body.dark-mode h3,
+    body.dark-mode p,
+    body.dark-mode span,
+    body.dark-mode div {
+      color: var(--text-primary);
+    }
+
+    /* Muted text */
+    body.dark-mode span[style*="color: rgb(108, 117, 125)"],
+    body.dark-mode div[style*="color: rgb(108, 117, 125)"] {
+      color: var(--text-muted) !important;
+    }
+
+    /* Secondary text */
+    body.dark-mode span[style*="color: rgb(73, 80, 87)"],
+    body.dark-mode div[style*="color: rgb(73, 80, 87)"] {
+      color: var(--text-secondary) !important;
+    }
+
+    /* Input fields */
+    body.dark-mode input,
+    body.dark-mode textarea,
+    body.dark-mode select {
+      background-color: var(--bg-tertiary) !important;
+      color: var(--text-primary) !important;
+      border-color: var(--border-medium) !important;
+    }
+
+    body.dark-mode input:focus,
+    body.dark-mode textarea:focus,
+    body.dark-mode select:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px rgba(90, 159, 212, 0.2) !important;
+    }
+
+    /* Buttons */
+    body.dark-mode button {
+      color: var(--text-primary);
+    }
+
+    body.dark-mode button[style*="background: rgb(15, 76, 129)"] {
+      background-color: var(--accent) !important;
+    }
+
+    body.dark-mode button[style*="background: rgb(15, 76, 129)"]:hover {
+      background-color: #4a8fc4 !important;
+    }
+
+    body.dark-mode button[style*="border: 1px solid"] {
+      border-color: var(--border-medium) !important;
+      background-color: var(--bg-secondary) !important;
       color: var(--text-primary) !important;
     }
 
-    body.dark-mode .message.user {
-      background-color: #1e40af !important;
+    /* Upload area */
+    body.dark-mode div[style*="border: 2px dashed"] {
+      border-color: var(--border-medium) !important;
+      background-color: var(--bg-tertiary) !important;
+    }
+
+    body.dark-mode div[style*="border: 2px dashed"]:hover {
+      border-color: var(--accent) !important;
+      background-color: var(--bg-secondary) !important;
+    }
+
+    /* Chat messages */
+    body.dark-mode div[style*="background: rgb(248, 249, 250)"] {
+      background-color: var(--bg-secondary) !important;
+      border-color: var(--border-light) !important;
+    }
+
+    /* System messages */
+    body.dark-mode div[style*="display: flex"][style*="background: rgb(248, 249, 250)"] {
+      background-color: var(--bg-secondary) !important;
+      border-color: var(--border-light) !important;
+      color: var(--text-secondary) !important;
+    }
+
+    /* Assistant messages */
+    body.dark-mode div[style*="maxWidth: 75%"] > div[style*="background: rgb(248, 249, 250)"] {
+      background-color: var(--bg-secondary) !important;
+      border-color: var(--border-light) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* User messages stay blue */
+    body.dark-mode div[style*="background: rgb(15, 76, 129)"] {
+      background-color: var(--accent) !important;
       color: white !important;
     }
 
-    body.dark-mode input,
-    body.dark-mode textarea {
+    /* Sources section */
+    body.dark-mode div[style*="background: rgb(233, 236, 239)"] {
       background-color: var(--bg-tertiary) !important;
       color: var(--text-primary) !important;
-      border-color: var(--border-color) !important;
     }
 
-    body.dark-mode button {
-      background-color: var(--bg-tertiary) !important;
-      color: var(--text-primary) !important;
-      border-color: var(--border-color) !important;
+    /* Dropdown menus */
+    body.dark-mode div[style*="position: absolute"][style*="background: white"] {
+      background-color: var(--bg-primary) !important;
+      border-color: var(--border-light) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
     }
 
-    body.dark-mode .sidebar {
+    /* Chat session items */
+    body.dark-mode div[style*="backgroundColor: rgb(219, 234, 254)"] {
+      background-color: rgba(90, 159, 212, 0.2) !important;
+      border-color: var(--accent) !important;
+    }
+
+    body.dark-mode div[style*="backgroundColor: rgb(249, 250, 251)"] {
       background-color: var(--bg-secondary) !important;
+    }
+
+    /* File items */
+    body.dark-mode div[style*="background: rgb(248, 249, 250)"][style*="borderRadius: 3px"] {
+      background-color: var(--bg-secondary) !important;
+      border-color: var(--border-light) !important;
+    }
+
+    /* Loading spinner */
+    body.dark-mode div[style*="border: 3px solid rgb(233, 236, 239)"] {
+      border-color: var(--border-medium) !important;
+      border-top-color: var(--accent) !important;
+    }
+
+    /* Icons color fix */
+    body.dark-mode svg {
+      color: currentColor;
+    }
+
+    /* Scrollbar */
+    body.dark-mode ::-webkit-scrollbar {
+      background-color: var(--bg-tertiary);
+    }
+
+    body.dark-mode ::-webkit-scrollbar-track {
+      background-color: var(--bg-tertiary);
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb {
+      background-color: var(--border-medium);
+      border-radius: 4px;
+    }
+
+    body.dark-mode ::-webkit-scrollbar-thumb:hover {
+      background-color: var(--text-muted);
+    }
+
+    /* DocumentManager specific styles */
+    body.dark-mode .document-item {
+      background-color: var(--bg-secondary) !important;
+      border-color: var(--border-light) !important;
+      color: var(--text-primary) !important;
+    }
+
+    body.dark-mode .document-item:hover {
+      background-color: var(--bg-tertiary) !important;
+    }
+
+    /* Transitions for smooth theme switching */
+    body * {
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
     }
   `;
 
