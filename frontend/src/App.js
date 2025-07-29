@@ -79,7 +79,7 @@ const DocumentIntelligence = () => {
 
   // Get user data from auth context
   const { user, signOut } = useAuth();
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
   // Use user's email from Supabase auth - with proper fallback
   const userEmail = user?.email || 'demo@example.com';
