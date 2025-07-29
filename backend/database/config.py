@@ -2,6 +2,7 @@
 import os
 from dataclasses import dataclass
 from typing import Optional
+import urllib.parse
 
 @dataclass
 class DatabaseConfig:
@@ -11,36 +12,35 @@ class DatabaseConfig:
     database: str = "rag_database"
     user: str = "rag_user"
     password: str = "rag_password"
-    
-@classmethod
-def from_env(cls) -> 'DatabaseConfig':
-    # Railway käyttää DATABASE_URL:ia
-    database_url = os.getenv("DATABASE_URL")
-    if database_url:
-        # Parse DATABASE_URL: postgresql://user:pass@host:port/db
-        import urllib.parse
-        parsed = urllib.parse.urlparse(database_url)
+
+    @classmethod
+    def from_env(cls) -> 'DatabaseConfig':
+        # Railway käyttää DATABASE_URL:ia
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            parsed = urllib.parse.urlparse(database_url)
+            return cls(
+                host=parsed.hostname,
+                port=parsed.port or 5432,
+                database=parsed.path[1:],  # Remove leading /
+                user=parsed.username,
+                password=parsed.password
+            )
+
+        # Fallback erilliset muuttujat
         return cls(
-            host=parsed.hostname,
-            port=parsed.port or 5432,
-            database=parsed.path[1:],  # Remove leading /
-            user=parsed.username,
-            password=parsed.password
+            host=os.getenv("DATABASE_HOST", "localhost"),
+            port=int(os.getenv("DATABASE_PORT", "5432")),
+            database=os.getenv("DATABASE_NAME", "railway"),
+            user=os.getenv("DATABASE_USER", "postgres"),
+            password=os.getenv("DATABASE_PASSWORD", "")
         )
-    
-    # Fallback erilliset muuttujat
-    return cls(
-        host=os.getenv("DATABASE_HOST", "localhost"),
-        port=int(os.getenv("DATABASE_PORT", "5432")),
-        database=os.getenv("DATABASE_NAME", "railway"),
-        user=os.getenv("DATABASE_USER", "postgres"),
-        password=os.getenv("DATABASE_PASSWORD", "")
-    )
-    
+
     @property
     def connection_string(self) -> str:
         """Get PostgreSQL connection string"""
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+
 
 # Test connection function
 def test_connection(config: Optional[DatabaseConfig] = None) -> bool:
