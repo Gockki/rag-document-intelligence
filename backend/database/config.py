@@ -12,16 +12,30 @@ class DatabaseConfig:
     user: str = "rag_user"
     password: str = "rag_password"
     
-    @classmethod
-    def from_env(cls) -> 'DatabaseConfig':
-        """Load database config from environment variables"""
+@classmethod
+def from_env(cls) -> 'DatabaseConfig':
+    # Railway käyttää DATABASE_URL:ia
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Parse DATABASE_URL: postgresql://user:pass@host:port/db
+        import urllib.parse
+        parsed = urllib.parse.urlparse(database_url)
         return cls(
-            host=os.getenv("DB_HOST", "localhost"),
-            port=int(os.getenv("DB_PORT", "5432")),
-            database=os.getenv("DB_NAME", "rag_database"),
-            user=os.getenv("DB_USER", "rag_user"),
-            password=os.getenv("DB_PASSWORD", "rag_password")
+            host=parsed.hostname,
+            port=parsed.port or 5432,
+            database=parsed.path[1:],  # Remove leading /
+            user=parsed.username,
+            password=parsed.password
         )
+    
+    # Fallback erilliset muuttujat
+    return cls(
+        host=os.getenv("DATABASE_HOST", "localhost"),
+        port=int(os.getenv("DATABASE_PORT", "5432")),
+        database=os.getenv("DATABASE_NAME", "railway"),
+        user=os.getenv("DATABASE_USER", "postgres"),
+        password=os.getenv("DATABASE_PASSWORD", "")
+    )
     
     @property
     def connection_string(self) -> str:
