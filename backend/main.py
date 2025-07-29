@@ -38,7 +38,7 @@ app.add_middleware(
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Initialize Chroma
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
+chroma_client = chromadb.PersistentClient(path="/data/chroma_db")
 collection = chroma_client.get_or_create_collection(
     name="documents",
     metadata={"hnsw:space": "cosine"}
