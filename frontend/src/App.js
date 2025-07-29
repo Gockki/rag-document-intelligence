@@ -74,6 +74,11 @@ const DocumentIntelligence = () => {
   const [currentSessionName, setCurrentSessionName] = useState('New Chat');
   const [showHistory, setShowHistory] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  
+  // Mobile responsive states
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -87,6 +92,19 @@ const DocumentIntelligence = () => {
                   user?.user_metadata?.full_name ||
                   user?.email?.split('@')[0] || 
                   'User';
+
+  // Window resize listener
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      if (window.innerWidth > 768) {
+        setSidebarOpen(false); // Auto-close sidebar on desktop
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -147,6 +165,9 @@ const DocumentIntelligence = () => {
     setCurrentSessionId(null);
     setCurrentSessionName('New Chat');
     setMessages([]);
+    if (isMobile) {
+      setSidebarOpen(false); // Close sidebar on mobile when starting new chat
+    }
   };
 
   // Load specific chat session
@@ -173,6 +194,11 @@ const DocumentIntelligence = () => {
           .reverse(); // Reverse to get chronological order
         
         setMessages(sessionMessages);
+      }
+      
+      // Close sidebar on mobile after loading session
+      if (isMobile) {
+        setSidebarOpen(false);
       }
     } catch (error) {
       console.error('Failed to load chat session:', error);
@@ -321,39 +347,62 @@ const DocumentIntelligence = () => {
         <div style={{
           maxWidth: '1400px',
           margin: '0 auto',
-          padding: '0.75rem 1.5rem',
+          padding: isMobile ? '0.5rem 1rem' : '0.75rem 1.5rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1rem' }}>
+            {/* Mobile menu button */}
+            {isMobile && (
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  minHeight: '44px',
+                  minWidth: '44px',
+                  justifyContent: 'center'
+                }}
+              >
+                <Menu size={24} />
+              </button>
+            )}
+            
             <div style={{
               background: colors.accent,
-              width: '40px',
-              height: '40px',
+              width: isMobile ? '32px' : '40px',
+              height: isMobile ? '32px' : '40px',
               borderRadius: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Brain size={24} color="white" />
+              <Brain size={isMobile ? 20 : 24} color="white" />
             </div>
             <div>
               <h1 style={{
-                fontSize: '20px',
+                fontSize: isMobile ? '16px' : '20px',
                 fontWeight: '600',
                 margin: 0,
                 letterSpacing: '-0.5px'
               }}>
-                Document Intelligence Platform
+                {isMobile ? 'RAG Platform' : 'Document Intelligence Platform'}
               </h1>
-              <p style={{
-                fontSize: '13px',
-                margin: 0,
-                opacity: 0.8
-              }}>
-                RAG-powered with Authentication
-              </p>
+              {!isMobile && (
+                <p style={{
+                  fontSize: '13px',
+                  margin: 0,
+                  opacity: 0.8
+                }}>
+                  RAG-powered with Authentication
+                </p>
+              )}
             </div>
           </div>
           <div style={{ position: 'relative' }}>
@@ -362,15 +411,16 @@ const DocumentIntelligence = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
+                gap: isMobile ? '0.5rem' : '0.75rem',
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.2)',
                 borderRadius: '4px',
-                padding: '0.5rem 1rem',
+                padding: isMobile ? '0.375rem 0.75rem' : '0.5rem 1rem',
                 cursor: 'pointer',
                 color: 'white',
-                fontSize: '14px',
-                transition: 'all 0.2s'
+                fontSize: isMobile ? '13px' : '14px',
+                transition: 'all 0.2s',
+                minHeight: '44px'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
@@ -380,22 +430,25 @@ const DocumentIntelligence = () => {
               }}
             >
               <div style={{
-                width: '32px',
-                height: '32px',
+                width: isMobile ? '28px' : '32px',
+                height: isMobile ? '28px' : '32px',
                 borderRadius: '50%',
                 background: colors.accent,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                fontSize: isMobile ? '12px' : '14px'
               }}>
                 {userName.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div style={{ fontWeight: '500' }}>{userName}</div>
-                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{userEmail}</div>
-              </div>
+              {!isMobile && (
+                <div>
+                  <div style={{ fontWeight: '500' }}>{userName}</div>
+                  <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{userEmail}</div>
+                </div>
+              )}
               <ChevronDown size={16} />
             </button>
 
@@ -441,7 +494,8 @@ const DocumentIntelligence = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      transition: 'background 0.2s'
+                      transition: 'background 0.2s',
+                      minHeight: '44px'
                     }}
                     onMouseOver={(e) => e.target.style.backgroundColor = '#fef2f2'}
                     onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
@@ -459,20 +513,79 @@ const DocumentIntelligence = () => {
       <div style={{
         maxWidth: '1400px',
         margin: '0 auto',
-        padding: '1.5rem',
-        display: 'grid',
-        gridTemplateColumns: '350px 1fr',
-        gap: '1.5rem'
+        padding: isMobile ? '1rem' : '1.5rem',
+        display: isMobile ? 'flex' : 'grid',
+        flexDirection: isMobile ? 'column' : undefined,
+        gridTemplateColumns: isMobile ? undefined : '350px 1fr',
+        gap: isMobile ? '1rem' : '1.5rem',
+        position: 'relative'
       }}>
         
+        {/* Mobile sidebar overlay */}
+        {isMobile && sidebarOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 40
+            }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Chat History Sidebar */}
-        <div className={`sidebar ${showHistory ? '' : 'hidden'}`} style={{ display: showHistory ? 'flex' : 'none', flexDirection: 'column', gap: '1rem' }}>
+        <div 
+          className={`sidebar ${showHistory ? '' : 'hidden'}`} 
+          style={{ 
+            display: showHistory ? 'flex' : 'none', 
+            flexDirection: 'column', 
+            gap: '1rem',
+            position: isMobile ? 'fixed' : 'static',
+            top: isMobile ? 0 : 'auto',
+            left: isMobile ? (sidebarOpen ? 0 : '-100%') : 'auto',
+            width: isMobile ? '80%' : 'auto',
+            maxWidth: isMobile ? '300px' : 'none',
+            height: isMobile ? '100vh' : 'auto',
+            background: isMobile ? 'white' : 'transparent',
+            zIndex: isMobile ? 50 : 'auto',
+            transition: isMobile ? 'left 0.3s ease' : 'none',
+            overflowY: isMobile ? 'auto' : 'visible',
+            padding: isMobile ? '1rem' : '0',
+            boxShadow: isMobile ? '2px 0 10px rgba(0,0,0,0.1)' : 'none'
+          }}
+        >
+          {/* Mobile close button */}
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                alignSelf: 'flex-end',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                color: colors.textMuted,
+                minHeight: '44px',
+                minWidth: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={24} />
+            </button>
+          )}
+          
           <div style={{
             background: 'white',
             border: `1px solid ${colors.borderLight}`,
             borderRadius: '4px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            padding: '1.25rem'
+            padding: isMobile ? '1rem' : '1.25rem'
           }}>
             <div style={{
               display: 'flex',
@@ -504,7 +617,8 @@ const DocumentIntelligence = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  transition: 'background 0.2s'
+                  transition: 'background 0.2s',
+                  minHeight: '32px'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = '#0d3e6b'}
                 onMouseLeave={(e) => e.currentTarget.style.background = colors.accent}
@@ -532,7 +646,8 @@ const DocumentIntelligence = () => {
                       borderRadius: '3px',
                       cursor: 'pointer',
                       fontSize: '0.875rem',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
+                      minHeight: '44px'
                     }}
                   >
                     <div style={{ fontWeight: '500', marginBottom: '0.25rem', color: colors.textPrimary }}>
@@ -553,7 +668,7 @@ const DocumentIntelligence = () => {
             border: `1px solid ${colors.borderLight}`,
             borderRadius: '4px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            padding: '1.25rem'
+            padding: isMobile ? '1rem' : '1.25rem'
           }}>
             <h3 style={{
               display: 'flex',
@@ -571,11 +686,15 @@ const DocumentIntelligence = () => {
             <div style={{
               border: `2px dashed ${colors.borderMedium}`,
               borderRadius: '4px',
-              padding: '1.5rem',
+              padding: isMobile ? '1rem' : '1.5rem',
               textAlign: 'center',
               cursor: isUploading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s',
-              background: colors.bgSecondary
+              background: colors.bgSecondary,
+              minHeight: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             onClick={() => fileInputRef.current?.click()}
             onMouseEnter={(e) => {
@@ -658,59 +777,77 @@ const DocumentIntelligence = () => {
           border: `1px solid ${colors.borderLight}`,
           display: 'flex',
           flexDirection: 'column',
-          height: '700px'
+          height: isMobile ? 'calc(100vh - 140px)' : '700px',
+          minHeight: isMobile ? '500px' : 'auto'
         }}>
           
           {/* Chat Header */}
           <div style={{
             borderBottom: `1px solid ${colors.borderLight}`,
-            padding: '1rem 1.5rem',
+            padding: isMobile ? '0.75rem 1rem' : '1rem 1.5rem',
             background: colors.bgSecondary
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              flexWrap: isMobile ? 'wrap' : 'nowrap'
+            }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                fontSize: '18px',
+                fontSize: isMobile ? '16px' : '18px',
                 fontWeight: '600',
-                color: colors.textPrimary
+                color: colors.textPrimary,
+                minWidth: 0,
+                flex: 1
               }}>
-                <MessageSquare size={20} />
-                {currentSessionName}
-                {currentSessionId && (
+                <MessageSquare size={isMobile ? 18 : 20} />
+                <span style={{ 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {currentSessionName}
+                </span>
+                {currentSessionId && !isMobile && (
                   <span style={{ fontSize: '0.75rem', color: colors.textMuted, marginLeft: '0.5rem' }}>
                     (Session #{currentSessionId})
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                style={{
-                  background: 'none',
-                  border: `1px solid ${colors.borderMedium}`,
-                  borderRadius: '3px',
-                  padding: '4px 8px',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  color: colors.textSecondary,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = colors.accent;
-                  e.currentTarget.style.color = colors.accent;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = colors.borderMedium;
-                  e.currentTarget.style.color = colors.textSecondary;
-                }}
-              >
-                {showHistory ? <X size={14} /> : <Menu size={14} />}
-                {showHistory ? 'Hide' : 'Show'} History
-              </button>
+              
+              {!isMobile && (
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  style={{
+                    background: 'none',
+                    border: `1px solid ${colors.borderMedium}`,
+                    borderRadius: '3px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    color: colors.textSecondary,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s',
+                    minHeight: '32px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = colors.accent;
+                    e.currentTarget.style.color = colors.accent;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = colors.borderMedium;
+                    e.currentTarget.style.color = colors.textSecondary;
+                  }}
+                >
+                  {showHistory ? <X size={14} /> : <Menu size={14} />}
+                  {showHistory ? 'Hide' : 'Show'} History
+                </button>
+              )}
             </div>
           </div>
 
@@ -718,22 +855,28 @@ const DocumentIntelligence = () => {
           <div style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '1rem'
+            padding: isMobile ? '0.75rem' : '1rem',
+            maxHeight: isMobile ? 'calc(100vh - 300px)' : 'none'
           }}>
             {messages.length === 0 ? (
               <div style={{
                 textAlign: 'center',
-                padding: '3rem 1rem',
+                padding: isMobile ? '2rem 1rem' : '3rem 1rem',
                 color: colors.textMuted
               }}>
-                <Search size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                <Search size={isMobile ? 36 : 48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
                 <h3 style={{
-                  fontSize: '18px',
+                  fontSize: isMobile ? '16px' : '18px',
                   fontWeight: '500',
                   color: colors.textSecondary,
                   margin: '0 0 0.5rem 0'
                 }}>Welcome, {userName}!</h3>
-                <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>
+                <p style={{ 
+                  fontSize: isMobile ? '13px' : '14px', 
+                  maxWidth: '400px', 
+                  margin: '0 auto',
+                  lineHeight: 1.4
+                }}>
                   {currentSessionId 
                     ? 'Continue your conversation or explore new topics in this session.'
                     : 'Upload documents and ask questions to see the RAG system in action. Try: "What is the main topic?" or "Summarize the key points"'
@@ -744,7 +887,7 @@ const DocumentIntelligence = () => {
               messages.map((message, index) => (
                 <div key={index} style={{
                   display: 'flex',
-                  marginBottom: '1rem',
+                  marginBottom: isMobile ? '0.75rem' : '1rem',
                   justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start'
                 }}>
                   {message.type === 'system' ? (
@@ -756,7 +899,7 @@ const DocumentIntelligence = () => {
                       background: colors.bgSecondary,
                       borderRadius: '4px',
                       border: `1px solid ${colors.borderLight}`,
-                      fontSize: '13px',
+                      fontSize: isMobile ? '12px' : '13px',
                       color: colors.textSecondary,
                       width: '100%'
                     }}>
@@ -765,13 +908,14 @@ const DocumentIntelligence = () => {
                     </div>
                   ) : (
                     <div style={{
-                      maxWidth: '75%',
-                      padding: '0.75rem 1rem',
+                      maxWidth: isMobile ? '90%' : '75%',
+                      padding: isMobile ? '0.625rem 0.875rem' : '0.75rem 1rem',
                       borderRadius: '4px',
                       wordWrap: 'break-word',
                       background: message.type === 'user' ? colors.accent : colors.bgSecondary,
                       color: message.type === 'user' ? 'white' : colors.textPrimary,
-                      border: message.type === 'assistant' ? `1px solid ${colors.borderLight}` : 'none'
+                      border: message.type === 'assistant' ? `1px solid ${colors.borderLight}` : 'none',
+                      fontSize: isMobile ? '14px' : '15px'
                     }}>
                       
                       {message.type === 'assistant' && (
@@ -780,7 +924,7 @@ const DocumentIntelligence = () => {
                           alignItems: 'center',
                           gap: '0.5rem',
                           marginBottom: '0.5rem',
-                          fontSize: '13px',
+                          fontSize: isMobile ? '12px' : '13px',
                           fontWeight: '500',
                           color: colors.accent
                         }}>
@@ -803,7 +947,7 @@ const DocumentIntelligence = () => {
                           borderTop: `1px solid ${colors.borderLight}`
                         }}>
                           <div style={{
-                            fontSize: '12px',
+                            fontSize: isMobile ? '11px' : '12px',
                             fontWeight: '600',
                             marginBottom: '0.5rem',
                             color: colors.textSecondary
@@ -815,7 +959,7 @@ const DocumentIntelligence = () => {
                                 padding: '0.5rem',
                                 borderRadius: '3px',
                                 marginBottom: '0.5rem',
-                                fontSize: '12px'
+                                fontSize: isMobile ? '11px' : '12px'
                               }}>
                                 <div style={{
                                   fontWeight: '500',
@@ -841,7 +985,7 @@ const DocumentIntelligence = () => {
                       )}
                       
                       <div style={{
-                        fontSize: '11px',
+                        fontSize: isMobile ? '10px' : '11px',
                         marginTop: '0.5rem',
                         opacity: 0.6,
                         color: message.type === 'user' ? 'rgba(255,255,255,0.8)' : colors.textMuted
@@ -868,7 +1012,7 @@ const DocumentIntelligence = () => {
                   background: colors.bgSecondary,
                   borderRadius: '4px',
                   border: `1px solid ${colors.borderLight}`,
-                  fontSize: '14px',
+                  fontSize: isMobile ? '13px' : '14px',
                   color: colors.textSecondary
                 }}>
                   <div style={{
@@ -889,12 +1033,13 @@ const DocumentIntelligence = () => {
           {/* Input Area */}
           <div style={{
             borderTop: `1px solid ${colors.borderLight}`,
-            padding: '1rem',
+            padding: isMobile ? '0.75rem' : '1rem',
             background: colors.bgSecondary
           }}>
             <div style={{
               display: 'flex',
-              gap: '0.75rem'
+              gap: isMobile ? '0.5rem' : '0.75rem',
+              flexDirection: isMobile ? 'column' : 'row'
             }}>
               <div style={{ flex: 1 }}>
                 <textarea
@@ -908,17 +1053,19 @@ const DocumentIntelligence = () => {
                   }
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
+                    padding: isMobile ? '0.875rem' : '0.75rem',
                     border: `1px solid ${colors.borderMedium}`,
                     borderRadius: '4px',
                     outline: 'none',
                     resize: 'none',
-                    fontSize: '14px',
+                    fontSize: isMobile ? '16px' : '14px',
                     fontFamily: 'inherit',
                     transition: 'border-color 0.2s',
-                    minHeight: '60px'
+                    minHeight: isMobile ? '44px' : '60px',
+                    maxHeight: isMobile ? '100px' : '120px',
+                    boxSizing: 'border-box'
                   }}
-                  rows={2}
+                  rows={isMobile ? 1 : 2}
                   disabled={isLoading}
                   onFocus={(e) => e.target.style.borderColor = colors.accent}
                   onBlur={(e) => e.target.style.borderColor = colors.borderMedium}
@@ -932,16 +1079,18 @@ const DocumentIntelligence = () => {
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  padding: '0 1.5rem',
+                  padding: isMobile ? '0.875rem 1.25rem' : '0 1.5rem',
                   cursor: !inputValue.trim() || isLoading ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '16px' : '14px',
                   fontWeight: '500',
-                  opacity: !inputValue.trim() || isLoading ? 0.6 : 1
+                  opacity: !inputValue.trim() || isLoading ? 0.6 : 1,
+                  minHeight: isMobile ? '44px' : 'auto',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   if (inputValue.trim() && !isLoading) {
@@ -953,22 +1102,24 @@ const DocumentIntelligence = () => {
                 }}
               >
                 <Send size={18} />
-                Send
+                {!isMobile && 'Send'}
               </button>
             </div>
             
-            <div style={{
-              marginTop: '0.5rem',
-              fontSize: '12px',
-              color: colors.textMuted,
-              display: 'flex',
-              justifyContent: 'space-between'
-            }}>
-              <span>Press Enter to send, Shift+Enter for new line</span>
-              {currentSessionId && (
-                <span>Session #{currentSessionId}</span>
-              )}
-            </div>
+            {!isMobile && (
+              <div style={{
+                marginTop: '0.5rem',
+                fontSize: '12px',
+                color: colors.textMuted,
+                display: 'flex',
+                justifyContent: 'space-between'
+              }}>
+                <span>Press Enter to send, Shift+Enter for new line</span>
+                {currentSessionId && (
+                  <span>Session #{currentSessionId}</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1018,6 +1169,22 @@ function App() {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+          body {
+            font-size: 16px !important;
+            -webkit-text-size-adjust: 100%;
+          }
+          
+          * {
+            box-sizing: border-box;
+          }
+          
+          input, textarea, button {
+            font-size: 16px !important; /* Prevent iOS zoom */
+          }
         }
       `}</style>
     </AuthProvider>
