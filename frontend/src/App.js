@@ -477,7 +477,9 @@ const DocumentIntelligence = () => {
                   </div>
                   
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setShowUserMenu(false);
                       handleLogout();
                     }}
