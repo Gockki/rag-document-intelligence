@@ -7,8 +7,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import DarkModeToggle from './components/DarkModeToggle';
 import { 
   Brain, 
-  Send, 
-  FileText, 
+  Send,  
   MessageSquare, 
   LogOut, 
   FolderOpen,
