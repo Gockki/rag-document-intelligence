@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://rag_user:rag_password@db:5432/rag_database
+      - CHROMA_HOST=http://chroma:8000
+    depends_on:
+      - db
+      - chroma
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: rag_user
+      POSTGRES_PASSWORD: rag_password
+      POSTGRES_DB: rag_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  chroma:
+    image: chromadb/chroma
+    ports:
+      - "8001:8000"
+
+volumes:
+  pgdata:
