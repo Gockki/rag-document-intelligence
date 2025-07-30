@@ -74,6 +74,7 @@ const DocumentIntelligence = () => {
   const [currentSessionName, setCurrentSessionName] = useState('New Chat');
   const [showHistory, setShowHistory] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [botMode, setBotMode] = useState('friendly'); // LISÄTTY: Bot mode state
   
   // Mobile responsive states
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -269,7 +270,7 @@ const DocumentIntelligence = () => {
     }
   };
 
-  // Send query function
+  // Send query function - PÄIVITETTY bot mode -tuella
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -294,7 +295,8 @@ const DocumentIntelligence = () => {
           question: question,
           max_results: 3,
           user_email: userEmail,
-          session_id: currentSessionId
+          session_id: currentSessionId,
+          bot_mode: botMode  // LISÄTTY: Lähetä bot mode
         }),
       });
 
@@ -316,7 +318,8 @@ const DocumentIntelligence = () => {
           content: result.answer,
           sources: result.sources,
           confidence: result.confidence,
-          timestamp: new Date().toLocaleString()
+          timestamp: new Date().toLocaleString(),
+          botMode: botMode  // LISÄTTY: Tallenna mikä mode oli käytössä
         }]);
       } else {
         const error = await response.json();
@@ -842,355 +845,452 @@ const DocumentIntelligence = () => {
                     e.currentTarget.style.color = colors.accent;
                   }}
                   onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor =
                     e.currentTarget.style.borderColor = colors.borderMedium;
-                    e.currentTarget.style.color = colors.textSecondary;
-                  }}
-                >
-                  {showHistory ? <X size={14} /> : <Menu size={14} />}
-                  {showHistory ? 'Hide' : 'Show'} History
-                </button>
-              )}
-            </div>
-          </div>
+                   e.currentTarget.style.color = colors.textSecondary;
+                 }}
+               >
+                 {showHistory ? <X size={14} /> : <Menu size={14} />}
+                 {showHistory ? 'Hide' : 'Show'} History
+               </button>
+             )}
+           </div>
+         </div>
 
-          {/* Messages */}
-          <div style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: isMobile ? '0.75rem' : '1rem',
-            maxHeight: isMobile ? 'calc(100vh - 300px)' : 'none'
-          }}>
-            {messages.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: isMobile ? '2rem 1rem' : '3rem 1rem',
-                color: colors.textMuted
-              }}>
-                <Search size={isMobile ? 36 : 48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                <h3 style={{
-                  fontSize: isMobile ? '16px' : '18px',
-                  fontWeight: '500',
-                  color: colors.textSecondary,
-                  margin: '0 0 0.5rem 0'
-                }}>Welcome, {userName}!</h3>
-                <p style={{ 
-                  fontSize: isMobile ? '13px' : '14px', 
-                  maxWidth: '400px', 
-                  margin: '0 auto',
-                  lineHeight: 1.4
-                }}>
-                  {currentSessionId 
-                    ? 'Continue your conversation or explore new topics in this session.'
-                    : 'Upload documents and ask questions to see the RAG system in action. Try: "What is the main topic?" or "Summarize the key points"'
-                  }
-                </p>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  marginBottom: isMobile ? '0.75rem' : '1rem',
-                  justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start'
-                }}>
-                  {message.type === 'system' ? (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.75rem 1rem',
-                      background: colors.bgSecondary,
-                      borderRadius: '4px',
-                      border: `1px solid ${colors.borderLight}`,
-                      fontSize: isMobile ? '12px' : '13px',
-                      color: colors.textSecondary,
-                      width: '100%'
-                    }}>
-                      <Info size={16} color={colors.warning} />
-                      {message.content}
-                    </div>
-                  ) : (
-                    <div style={{
-                      maxWidth: isMobile ? '90%' : '75%',
-                      padding: isMobile ? '0.625rem 0.875rem' : '0.75rem 1rem',
-                      borderRadius: '4px',
-                      wordWrap: 'break-word',
-                      background: message.type === 'user' ? colors.accent : colors.bgSecondary,
-                      color: message.type === 'user' ? 'white' : colors.textPrimary,
-                      border: message.type === 'assistant' ? `1px solid ${colors.borderLight}` : 'none',
-                      fontSize: isMobile ? '14px' : '15px'
-                    }}>
-                      
-                      {message.type === 'assistant' && (
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          marginBottom: '0.5rem',
-                          fontSize: isMobile ? '12px' : '13px',
-                          fontWeight: '500',
-                          color: colors.accent
-                        }}>
-                          <Brain size={16} />
-                          <span>AI Response</span>
-                          {message.confidence !== undefined && (
-                            <span style={{ color: colors.textMuted, fontWeight: 'normal' }}>
-                              • Confidence: {(message.confidence * 100).toFixed(1)}%
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      
-                      <div>{message.content}</div>
-                      
-                      {message.sources && message.sources.length > 0 && (
-                        <div style={{
-                          marginTop: '0.75rem',
-                          paddingTop: '0.75rem',
-                          borderTop: `1px solid ${colors.borderLight}`
-                        }}>
-                          <div style={{
-                            fontSize: isMobile ? '11px' : '12px',
-                            fontWeight: '600',
-                            marginBottom: '0.5rem',
-                            color: colors.textSecondary
-                          }}>Sources:</div>
-                          <div>
-                            {message.sources.map((source, idx) => (
-                              <div key={idx} style={{
-                                background: colors.bgTertiary,
-                                padding: '0.5rem',
-                                borderRadius: '3px',
-                                marginBottom: '0.5rem',
-                                fontSize: isMobile ? '11px' : '12px'
-                              }}>
-                                <div style={{
-                                  fontWeight: '500',
-                                  color: colors.textPrimary,
-                                  marginBottom: '0.25rem'
-                                }}>{source.source}</div>
-                                <div style={{
-                                  color: colors.accent,
-                                  marginBottom: '0.25rem'
-                                }}>
-                                  Similarity: {(source.similarity * 100).toFixed(1)}%
-                                </div>
-                                <div style={{
-                                  color: colors.textSecondary,
-                                  fontStyle: 'italic'
-                                }}>
-                                  "{source.content_preview}"
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div style={{
-                        fontSize: isMobile ? '10px' : '11px',
-                        marginTop: '0.5rem',
-                        opacity: 0.6,
-                        color: message.type === 'user' ? 'rgba(255,255,255,0.8)' : colors.textMuted
-                      }}>
-                        {message.timestamp}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-            
-            {isLoading && (
-              <div style={{
-                display: 'flex',
-                justifyContent: 'flex-start',
-                marginBottom: '1rem'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1rem',
-                  background: colors.bgSecondary,
-                  borderRadius: '4px',
-                  border: `1px solid ${colors.borderLight}`,
-                  fontSize: isMobile ? '13px' : '14px',
-                  color: colors.textSecondary
-                }}>
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    border: `2px solid ${colors.borderMedium}`,
-                    borderTop: `2px solid ${colors.accent}`,
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }}></div>
-                  <span>AI is thinking...</span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+         {/* LISÄTTY: Bot Mode Selector */}
+         <div className="bot-mode-selector" style={{
+           padding: '15px 20px',
+           borderBottom: `1px solid ${colors.borderLight}`,
+           background: colors.bgSecondary,
+           display: 'flex',
+           alignItems: 'center',
+           gap: '12px',
+           flexWrap: isMobile ? 'wrap' : 'nowrap',
+           transition: 'all 0.2s ease'
+         }}>
+           <span style={{ fontSize: '14px', color: colors.textMuted }}>AI Assistant Mode:</span>
+           <select 
+             value={botMode} 
+             onChange={(e) => setBotMode(e.target.value)}
+             style={{
+               padding: '6px 12px',
+               borderRadius: '6px',
+               border: `1px solid ${colors.borderMedium}`,
+               background: 'white',
+               fontSize: '14px',
+               cursor: 'pointer',
+               outline: 'none',
+               transition: 'border-color 0.2s ease',
+               minWidth: isMobile ? '150px' : 'auto'
+             }}
+             onMouseEnter={(e) => e.target.style.borderColor = colors.accent}
+             onMouseLeave={(e) => e.target.style.borderColor = colors.borderMedium}
+             onFocus={(e) => {
+               e.target.style.borderColor = colors.accent;
+               e.target.style.boxShadow = '0 0 0 3px rgba(15, 76, 129, 0.1)';
+             }}
+             onBlur={(e) => {
+               e.target.style.borderColor = colors.borderMedium;
+               e.target.style.boxShadow = 'none';
+             }}
+           >
+             <option value="friendly">😊 Friendly Assistant</option>
+             <option value="analytical">🔬 Data Analyst</option>
+             <option value="creative">🎨 Creative Thinker</option>
+             <option value="professional">👔 Business Consultant</option>
+           </select>
+           <span style={{ 
+             fontSize: '12px', 
+             color: colors.textMuted,
+             marginLeft: isMobile ? '0' : 'auto',
+             width: isMobile ? '100%' : 'auto'
+           }}>
+             {botMode === 'friendly' && 'Warm and encouraging responses with insights'}
+             {botMode === 'analytical' && 'Deep data analysis with statistics'}
+             {botMode === 'creative' && 'Imaginative perspectives and ideas'}
+             {botMode === 'professional' && 'Executive-level business insights'}
+           </span>
+         </div>
 
-          {/* Input Area */}
-          <div style={{
-            borderTop: `1px solid ${colors.borderLight}`,
-            padding: isMobile ? '0.75rem' : '1rem',
-            background: colors.bgSecondary
-          }}>
-            <div style={{
-              display: 'flex',
-              gap: isMobile ? '0.5rem' : '0.75rem',
-              flexDirection: isMobile ? 'column' : 'row'
-            }}>
-              <div style={{ flex: 1 }}>
-                <textarea
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={
-                    currentSessionId 
-                      ? "Continue your conversation..." 
-                      : "Ask a question about your documents..."
-                  }
-                  style={{
-                    width: '100%',
-                    padding: isMobile ? '0.875rem' : '0.75rem',
-                    border: `1px solid ${colors.borderMedium}`,
-                    borderRadius: '4px',
-                    outline: 'none',
-                    resize: 'none',
-                    fontSize: isMobile ? '16px' : '14px',
-                    fontFamily: 'inherit',
-                    transition: 'border-color 0.2s',
-                    minHeight: isMobile ? '44px' : '60px',
-                    maxHeight: isMobile ? '100px' : '120px',
-                    boxSizing: 'border-box'
-                  }}
-                  rows={isMobile ? 1 : 2}
-                  disabled={isLoading}
-                  onFocus={(e) => e.target.style.borderColor = colors.accent}
-                  onBlur={(e) => e.target.style.borderColor = colors.borderMedium}
-                />
-              </div>
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading}
-                style={{
-                  background: colors.accent,
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: isMobile ? '0.875rem 1.25rem' : '0 1.5rem',
-                  cursor: !inputValue.trim() || isLoading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  fontSize: isMobile ? '16px' : '14px',
-                  fontWeight: '500',
-                  opacity: !inputValue.trim() || isLoading ? 0.6 : 1,
-                  minHeight: isMobile ? '44px' : 'auto',
-                  whiteSpace: 'nowrap'
-                }}
-                onMouseEnter={(e) => {
-                  if (inputValue.trim() && !isLoading) {
-                    e.currentTarget.style.background = '#0d3e6b';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = colors.accent;
-                }}
-              >
-                <Send size={18} />
-                {!isMobile && 'Send'}
-              </button>
-            </div>
-            
-            {!isMobile && (
-              <div style={{
-                marginTop: '0.5rem',
-                fontSize: '12px',
-                color: colors.textMuted,
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}>
-                <span>Press Enter to send, Shift+Enter for new line</span>
-                {currentSessionId && (
-                  <span>Session #{currentSessionId}</span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+         {/* Messages */}
+         <div style={{
+           flex: 1,
+           overflowY: 'auto',
+           padding: isMobile ? '0.75rem' : '1rem',
+           maxHeight: isMobile ? 'calc(100vh - 300px)' : 'none'
+         }}>
+           {messages.length === 0 ? (
+             <div style={{
+               textAlign: 'center',
+               padding: isMobile ? '2rem 1rem' : '3rem 1rem',
+               color: colors.textMuted
+             }}>
+               <Search size={isMobile ? 36 : 48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+               <h3 style={{
+                 fontSize: isMobile ? '16px' : '18px',
+                 fontWeight: '500',
+                 color: colors.textSecondary,
+                 margin: '0 0 0.5rem 0'
+               }}>Welcome, {userName}!</h3>
+               <p style={{ 
+                 fontSize: isMobile ? '13px' : '14px', 
+                 maxWidth: '400px', 
+                 margin: '0 auto',
+                 lineHeight: 1.4
+               }}>
+                 {currentSessionId 
+                   ? 'Continue your conversation or explore new topics in this session.'
+                   : 'Upload documents and ask questions to see the RAG system in action. Try: "What is the main topic?" or "Summarize the key points"'
+                 }
+               </p>
+             </div>
+           ) : (
+             messages.map((message, index) => (
+               <div key={index} style={{
+                 display: 'flex',
+                 marginBottom: isMobile ? '0.75rem' : '1rem',
+                 justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start'
+               }}>
+                 {message.type === 'system' ? (
+                   <div style={{
+                     display: 'flex',
+                     alignItems: 'center',
+                     gap: '0.5rem',
+                     padding: '0.75rem 1rem',
+                     background: colors.bgSecondary,
+                     borderRadius: '4px',
+                     border: `1px solid ${colors.borderLight}`,
+                     fontSize: isMobile ? '12px' : '13px',
+                     color: colors.textSecondary,
+                     width: '100%'
+                   }}>
+                     <Info size={16} color={colors.warning} />
+                     {message.content}
+                   </div>
+                 ) : (
+                   <div style={{
+                     maxWidth: isMobile ? '90%' : '75%',
+                     padding: isMobile ? '0.625rem 0.875rem' : '0.75rem 1rem',
+                     borderRadius: '4px',
+                     wordWrap: 'break-word',
+                     background: message.type === 'user' ? colors.accent : colors.bgSecondary,
+                     color: message.type === 'user' ? 'white' : colors.textPrimary,
+                     border: message.type === 'assistant' ? `1px solid ${colors.borderLight}` : 'none',
+                     fontSize: isMobile ? '14px' : '15px'
+                   }}>
+                     
+                     {message.type === 'assistant' && (
+                       <div style={{
+                         display: 'flex',
+                         alignItems: 'center',
+                         gap: '0.5rem',
+                         marginBottom: '0.5rem',
+                         fontSize: isMobile ? '12px' : '13px',
+                         fontWeight: '500',
+                         color: colors.accent
+                       }}>
+                         <Brain size={16} />
+                         <span>AI Response</span>
+                         {/* LISÄTTY: Mode badge viestissä */}
+                         {message.botMode && (
+                           <span style={{
+                             marginLeft: '8px',
+                             fontSize: '12px',
+                             padding: '2px 8px',
+                             borderRadius: '12px',
+                             background: {
+                               'friendly': '#dbeafe',
+                               'analytical': '#e0e7ff',
+                               'creative': '#fce7f3',
+                               'professional': '#e5e7eb'
+                             }[message.botMode] || '#e5e7eb',
+                             color: {
+                               'friendly': '#1e40af',
+                               'analytical': '#4338ca',
+                               'creative': '#be185d',
+                               'professional': '#374151'
+                             }[message.botMode] || '#374151'
+                           }}>
+                             {message.botMode}
+                           </span>
+                         )}
+                         {message.confidence !== undefined && (
+                           <span style={{ color: colors.textMuted, fontWeight: 'normal' }}>
+                             • Confidence: {(message.confidence * 100).toFixed(1)}%
+                           </span>
+                         )}
+                       </div>
+                     )}
+                     
+                     <div>{message.content}</div>
+                     
+                     {message.sources && message.sources.length > 0 && (
+                       <div style={{
+                         marginTop: '0.75rem',
+                         paddingTop: '0.75rem',
+                         borderTop: `1px solid ${colors.borderLight}`
+                       }}>
+                         <div style={{
+                           fontSize: isMobile ? '11px' : '12px',
+                           fontWeight: '600',
+                           marginBottom: '0.5rem',
+                           color: colors.textSecondary
+                         }}>Sources:</div>
+                         <div>
+                           {message.sources.map((source, idx) => (
+                             <div key={idx} style={{
+                               background: colors.bgTertiary,
+                               padding: '0.5rem',
+                               borderRadius: '3px',
+                               marginBottom: '0.5rem',
+                               fontSize: isMobile ? '11px' : '12px'
+                             }}>
+                               <div style={{
+                                 fontWeight: '500',
+                                 color: colors.textPrimary,
+                                 marginBottom: '0.25rem'
+                               }}>{source.source}</div>
+                               <div style={{
+                                 color: colors.accent,
+                                 marginBottom: '0.25rem'
+                               }}>
+                                 Similarity: {(source.similarity * 100).toFixed(1)}%
+                               </div>
+                               <div style={{
+                                 color: colors.textSecondary,
+                                 fontStyle: 'italic'
+                               }}>
+                                 "{source.content_preview}"
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                     
+                     <div style={{
+                       fontSize: isMobile ? '10px' : '11px',
+                       marginTop: '0.5rem',
+                       opacity: 0.6,
+                       color: message.type === 'user' ? 'rgba(255,255,255,0.8)' : colors.textMuted
+                     }}>
+                       {message.timestamp}
+                     </div>
+                   </div>
+                 )}
+               </div>
+             ))
+           )}
+           
+           {isLoading && (
+             <div style={{
+               display: 'flex',
+               justifyContent: 'flex-start',
+               marginBottom: '1rem'
+             }}>
+               <div style={{
+                 display: 'flex',
+                 alignItems: 'center',
+                 gap: '0.5rem',
+                 padding: '0.75rem 1rem',
+                 background: colors.bgSecondary,
+                 borderRadius: '4px',
+                 border: `1px solid ${colors.borderLight}`,
+                 fontSize: isMobile ? '13px' : '14px',
+                 color: colors.textSecondary
+               }}>
+                 <div style={{
+                   width: '16px',
+                   height: '16px',
+                   border: `2px solid ${colors.borderMedium}`,
+                   borderTop: `2px solid ${colors.accent}`,
+                   borderRadius: '50%',
+                   animation: 'spin 1s linear infinite'
+                 }}></div>
+                 <span>AI is thinking...</span>
+               </div>
+             </div>
+           )}
+           <div ref={messagesEndRef} />
+         </div>
 
-      {/* Click outside to close user menu */}
-      {showUserMenu && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 40
-          }}
-          onClick={() => setShowUserMenu(false)}
-        />
-      )}
-    </div>
-  );
+         {/* Input Area */}
+         <div style={{
+           borderTop: `1px solid ${colors.borderLight}`,
+           padding: isMobile ? '0.75rem' : '1rem',
+           background: colors.bgSecondary
+         }}>
+           <div style={{
+             display: 'flex',
+             gap: isMobile ? '0.5rem' : '0.75rem',
+             flexDirection: isMobile ? 'column' : 'row'
+           }}>
+             <div style={{ flex: 1 }}>
+               <textarea
+                 value={inputValue}
+                 onChange={(e) => setInputValue(e.target.value)}
+                 onKeyPress={handleKeyPress}
+                 placeholder={
+                   currentSessionId 
+                     ? "Continue your conversation..." 
+                     : "Ask a question about your documents..."
+                 }
+                 style={{
+                   width: '100%',
+                   padding: isMobile ? '0.875rem' : '0.75rem',
+                   border: `1px solid ${colors.borderMedium}`,
+                   borderRadius: '4px',
+                   outline: 'none',
+                   resize: 'none',
+                   fontSize: isMobile ? '16px' : '14px',
+                   fontFamily: 'inherit',
+                   transition: 'border-color 0.2s',
+                   minHeight: isMobile ? '44px' : '60px',
+                   maxHeight: isMobile ? '100px' : '120px',
+                   boxSizing: 'border-box'
+                 }}
+                 rows={isMobile ? 1 : 2}
+                 disabled={isLoading}
+                 onFocus={(e) => e.target.style.borderColor = colors.accent}
+                 onBlur={(e) => e.target.style.borderColor = colors.borderMedium}
+               />
+             </div>
+             <button
+               onClick={handleSendMessage}
+               disabled={!inputValue.trim() || isLoading}
+               style={{
+                 background: colors.accent,
+                 color: 'white',
+                 border: 'none',
+                 borderRadius: '4px',
+                 padding: isMobile ? '0.875rem 1.25rem' : '0 1.5rem',
+                 cursor: !inputValue.trim() || isLoading ? 'not-allowed' : 'pointer',
+                 transition: 'all 0.2s',
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 gap: '0.5rem',
+                 fontSize: isMobile ? '16px' : '14px',
+                 fontWeight: '500',
+                 opacity: !inputValue.trim() || isLoading ? 0.6 : 1,
+                 minHeight: isMobile ? '44px' : 'auto',
+                 whiteSpace: 'nowrap'
+               }}
+               onMouseEnter={(e) => {
+                 if (inputValue.trim() && !isLoading) {
+                   e.currentTarget.style.background = '#0d3e6b';
+                 }
+               }}
+               onMouseLeave={(e) => {
+                 e.currentTarget.style.background = colors.accent;
+               }}
+             >
+               <Send size={18} />
+               {!isMobile && 'Send'}
+             </button>
+           </div>
+           
+           {!isMobile && (
+             <div style={{
+               marginTop: '0.5rem',
+               fontSize: '12px',
+               color: colors.textMuted,
+               display: 'flex',
+               justifyContent: 'space-between'
+             }}>
+               <span>Press Enter to send, Shift+Enter for new line</span>
+               {currentSessionId && (
+                 <span>Session #{currentSessionId}</span>
+               )}
+             </div>
+           )}
+         </div>
+       </div>
+     </div>
+
+     {/* Click outside to close user menu */}
+     {showUserMenu && (
+       <div
+         style={{
+           position: 'fixed',
+           inset: 0,
+           zIndex: 40
+         }}
+         onClick={() => setShowUserMenu(false)}
+       />
+     )}
+   </div>
+ );
 };
 
 // Main app component with auth logic
 const AppContent = () => {
-  const { user, loading } = useAuth();
+ const { user, loading } = useAuth();
 
-  // Show loading spinner while checking auth
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+ // Show loading spinner while checking auth
+ if (loading) {
+   return <LoadingSpinner />;
+ }
 
-  // Show login if no user
-  if (!user) {
-    return <Auth />;
-  }
+ // Show login if no user
+ if (!user) {
+   return <Auth />;
+ }
 
-  // Show main app if user is logged in
-  return <DocumentIntelligence />;
+ // Show main app if user is logged in
+ return <DocumentIntelligence />;
 };
 
 // Root app with providers
 function App() {
-  return (
-    <AuthProvider>
-      <ThemeProvider>
-        <AppContent />
-        <DarkModeToggle />
-      </ThemeProvider>
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
-        /* Mobile responsive styles */
-        @media (max-width: 768px) {
-          body {
-            font-size: 16px !important;
-            -webkit-text-size-adjust: 100%;
-          }
-          
-          * {
-            box-sizing: border-box;
-          }
-          
-          input, textarea, button {
-            font-size: 16px !important; /* Prevent iOS zoom */
-          }
-        }
-      `}</style>
-    </AuthProvider>
-  );
+ return (
+   <AuthProvider>
+     <ThemeProvider>
+       <AppContent />
+       <DarkModeToggle />
+     </ThemeProvider>
+     <style>{`
+       @keyframes spin {
+         0% { transform: rotate(0deg); }
+         100% { transform: rotate(360deg); }
+       }
+       
+       /* Bot mode selector styles */
+       .bot-mode-selector {
+         transition: all 0.2s ease;
+       }
+       
+       .bot-mode-selector select {
+         transition: border-color 0.2s ease;
+       }
+       
+       .bot-mode-selector select:hover {
+         border-color: #3b82f6;
+       }
+       
+       .bot-mode-selector select:focus {
+         border-color: #3b82f6;
+         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+       }
+       
+       /* Mobile responsive styles */
+       @media (max-width: 768px) {
+         body {
+           font-size: 16px !important;
+           -webkit-text-size-adjust: 100%;
+         }
+         
+         * {
+           box-sizing: border-box;
+         }
+         
+         input, textarea, button, select {
+           font-size: 16px !important; /* Prevent iOS zoom */
+         }
+       }
+     `}</style>
+   </AuthProvider>
+ );
 }
 
 export default App;
